@@ -3,6 +3,7 @@ import joblib
 import numpy as np
 from pydantic import BaseModel
 import requests
+import pandas as pd
 
 app = FastAPI()
 
