@@ -19,24 +19,22 @@ else:
 games = []
 for year, game_list in historical_data["all_years_data"].items():
     for game in game_list:
+        total_score = game["score1"] + game["score2"]
         games.append({
             "year": int(year),
             "team1": game["team1"],
             "team2": game["team2"],
             "score1": game["score1"],
             "score2": game["score2"],
-            "total_score": game["score1"] + game["score2"],
+            "amount": total_score,  # Use total score as the "amount"
+            "over": 1 if total_score > 45 else 0,  # Binary target for "over"
         })
 
 data = pd.DataFrame(games)
 
-# Feature engineering: Create "over" target column
-OVER_UNDER_THRESHOLD = 45  # Define your threshold for "over"
-data["over"] = (data["total_score"] > OVER_UNDER_THRESHOLD).astype(int)
-
 # Select features and target
-X = data[["score1", "score2", "year"]]  # Features: team scores and year
-y = data["over"]  # Target: whether total score is over the threshold
+X = data[["year", "amount"]]  # Features: year and "amount" (total score)
+y = data["over"]  # Target: whether the total score is over the threshold
 
 # Train-test split
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
