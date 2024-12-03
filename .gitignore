@@ -3,8 +3,5 @@ __pycache__/
 *.pyc
 *.pyo
 
-# Model artifacts
-ml/*.joblib
-
 # Environment files
 .env
