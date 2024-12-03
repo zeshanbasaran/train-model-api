@@ -10,7 +10,7 @@ model = joblib.load("betting_model.pkl")
 encoder = joblib.load("team_encoder.pkl")
 
 # Database setup
-DATABASE_URL = "sqlite:///./nfl_data.db"
+DATABASE_URL = "postgresql://nfl_data_user:f943VkuXHasDOiJJVqd17V6zduxP5uv4@dpg-ct70st3tq21c73ed1p4g-a.oregon-postgres.render.com/nfl_data"
 Base = declarative_base()
 engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
