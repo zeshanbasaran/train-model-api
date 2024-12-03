@@ -1,33 +1,49 @@
-# train_model.py
-import pandas as pd
+import requests
+from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.preprocessing import LabelEncoder
+from sklearn.metrics import accuracy_score
 import joblib
+import pandas as pd
 
-# Load dataset
-data = pd.read_csv("historical_games.csv")  # Replace with your dataset
+# Fetch data from your existing API
+url = "https://your-existing-api.onrender.com/games/all"
+response = requests.get(url)
 
-# Feature Engineering
-data["total_score"] = data["score1"] + data["score2"]
-data["outcome"] = (data["total_score"] > data["over_under_line"]).astype(int)
+if response.status_code == 200:
+    historical_data = response.json()
+else:
+    raise Exception(f"Error fetching data: {response.status_code}")
 
-# Prepare Features and Target
-X = data[["team1", "team2", "over_under_line"]]
-y = data["outcome"]
+# Preprocess data
+games = []
+for year, year_games in historical_data["all_years_data"].items():
+    for game in year_games:
+        games.append({
+            "year": int(year),
+            "score1": game["score1"],
+            "score2": game["score2"],
+            "total_score": game["score1"] + game["score2"],
+            "over": game["score1"] + game["score2"] > 45  # Example threshold
+        })
 
-# Encode team names
-encoder = LabelEncoder()
-X["team1"] = encoder.fit_transform(X["team1"])
-X["team2"] = encoder.fit_transform(X["team2"])
+df = pd.DataFrame(games)
 
-# Split data
+# Split features and target
+X = df[["score1", "score2", "year"]]
+y = df["over"]
+
+# Train-test split
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-# Train Model
-model = RandomForestClassifier(random_state=42, n_estimators=100)
+# Train model
+model = LogisticRegression()
 model.fit(X_train, y_train)
 
-# Save Model and Encoder
-joblib.dump(model, "betting_model.pkl")
-joblib.dump(encoder, "team_encoder.pkl")
+# Evaluate model
+y_pred = model.predict(X_test)
+print(f"Model accuracy: {accuracy_score(y_test, y_pred):.2f}")
+
+# Save model
+joblib.dump(model, "ml/over_under_model.joblib")
+print("Model saved to ml/over_under_model.joblib")
+
