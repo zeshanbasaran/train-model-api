@@ -52,8 +52,17 @@ def predict(request: PredictionRequest):
     # Create input feature array with only "year" and "amount"
     input_features = np.array([[request.year, input_amount]])
 
+    # Debug: Log the input features
+    print(f"Input features: {input_features}")
+    
     # Make prediction
-    probabilities = model.predict_proba(input_features)[0]
+    try:
+        probabilities = model.predict_proba(input_features)[0]
+        print(f"Model probabilities: {probabilities}")  # Debugging log
+    except Exception as e:
+        print(f"Prediction error: {e}")
+        raise HTTPException(status_code=500, detail="Error during prediction.")
+
     confidence = probabilities[1] * 100  # Probability of "over"
 
     # Determine result
@@ -62,10 +71,4 @@ def predict(request: PredictionRequest):
     else:
         confidence_level = 100 - confidence
 
-    return {
-        "team1": request.team1,
-        "team2": request.team2,
-        "year": request.year,
-        "over_or_under": request.over_or_under,
-        "confidence_level": f"{confidence_level:.2f}%"
-    }
+    return {"confidence_level": f"{confidence:.2f}%"}
