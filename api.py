@@ -14,7 +14,7 @@ class PredictionRequest(BaseModel):
     team2: str
     year: int
     over_or_under: str  # "over" or "under"
-    amount: float
+    amount: float  # Over/under value
 
 @app.post("/predict")
 def predict(request: PredictionRequest):
@@ -45,7 +45,12 @@ def predict(request: PredictionRequest):
     # Calculate features for prediction
     avg_team1_score = np.mean(team1_scores) if team1_scores else 0
     avg_team2_score = np.mean(team2_scores) if team2_scores else 0
-    input_features = np.array([[avg_team1_score, avg_team2_score, request.year]])
+
+    # Use the average of both teams' scores as "amount"
+    input_amount = (avg_team1_score + avg_team2_score) / 2 if team1_scores and team2_scores else 0
+
+    # Create input feature array with only "year" and "amount"
+    input_features = np.array([[request.year, input_amount]])
 
     # Make prediction
     probabilities = model.predict_proba(input_features)[0]
