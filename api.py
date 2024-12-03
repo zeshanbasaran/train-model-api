@@ -13,13 +13,13 @@ class PredictionRequest(BaseModel):
     team1: str
     team2: str
     year: int
-    option: str  # "over" or "under"
+    over_or_under: str  # "over" or "under"
     amount: float
 
 @app.post("/predict")
 def predict(request: PredictionRequest):
     # Validate input
-    if request.option not in ["over", "under"]:
+    if request.over_or_under not in ["over", "under"]:
         raise HTTPException(status_code=400, detail="Invalid option. Must be 'over' or 'under'.")
 
     # Fetch team data from your existing API
@@ -52,7 +52,7 @@ def predict(request: PredictionRequest):
     confidence = probabilities[1] * 100  # Probability of "over"
 
     # Determine result
-    if request.option == "over":
+    if request.over_or_under == "over":
         confidence_level = confidence
     else:
         confidence_level = 100 - confidence
@@ -61,6 +61,6 @@ def predict(request: PredictionRequest):
         "team1": request.team1,
         "team2": request.team2,
         "year": request.year,
-        "option": request.option,
+        "over_or_under": request.over_or_under,
         "confidence_level": f"{confidence_level:.2f}%"
     }
