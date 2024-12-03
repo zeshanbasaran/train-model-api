@@ -64,4 +64,3 @@ def predict(request: PredictionRequest):
         "option": request.option,
         "confidence_level": f"{confidence_level:.2f}%"
     }
-}
