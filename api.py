@@ -23,7 +23,7 @@ def predict(request: PredictionRequest):
         raise HTTPException(status_code=400, detail="Invalid option. Must be 'over' or 'under'.")
 
     # Fetch team data from your existing API
-    api_url = "https://your-existing-api.onrender.com/games/all"
+    api_url = "https://nfl-api.onrender.com/games/all"
     response = requests.get(api_url)
     if response.status_code != 200:
         raise HTTPException(status_code=500, detail="Error fetching data from the existing API.")
@@ -48,8 +48,20 @@ def predict(request: PredictionRequest):
     input_features = np.array([[avg_team1_score, avg_team2_score, request.year]])
 
     # Make prediction
-    prediction = model.predict(input_features)[0]
+    probabilities = model.predict_proba(input_features)[0]
+    confidence = probabilities[1] * 100  # Probability of "over"
 
     # Determine result
-    result = "win" if (prediction and request.option == "over") or (not prediction and request.option == "under") else "loss"
-    return {"team1": request.team1, "team2": request.team2, "option": request.option, "result": result}
+    if request.option == "over":
+        confidence_level = confidence
+    else:
+        confidence_level = 100 - confidence
+
+    return {
+        "team1": request.team1,
+        "team2": request.team2,
+        "year": request.year,
+        "option": request.option,
+        "confidence_level": f"{confidence_level:.2f}%"
+    }
+}
