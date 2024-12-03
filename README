@@ -1,0 +1,30 @@
+# NFL Betting Odds API
+
+This API predicts the outcome of over/under bets based on historical NFL data.
+
+## Endpoints
+- `POST /predict`: Make a prediction.
+  - **Request body**:
+    ```json
+    {
+      "team1": "Ravens",
+      "team2": "Chiefs",
+      "year": 2024,
+      "option": "over",
+      "amount": 45
+    }
+    ```
+  - **Response**:
+    ```json
+    {
+      "team1": "Ravens",
+      "team2": "Chiefs",
+      "option": "over",
+      "result": "win"
+    }
+    ```
+
+## Training the Model
+1. Run `train_model.py` to train and save the model:
+   ```bash
+   python train_model.py
