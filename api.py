@@ -22,53 +22,23 @@ def predict(request: PredictionRequest):
     if request.over_or_under not in ["over", "under"]:
         raise HTTPException(status_code=400, detail="Invalid option. Must be 'over' or 'under'.")
 
-    # Fetch team data from your existing API
-    api_url = "https://nfl-api.onrender.com/games/all"
-    response = requests.get(api_url)
-    if response.status_code != 200:
-        raise HTTPException(status_code=500, detail="Error fetching data from the existing API.")
+    # Prepare the data for the model
+    input_features = pd.DataFrame([{
+        "year": request.year,
+        "amount": request.amount
+    }])
 
-    historical_data = response.json()
-
-    # Example preprocessing (adjust based on your actual data)
-    team1_scores = []
-    team2_scores = []
-
-    for year, games in historical_data["all_years_data"].items():
-        if int(year) <= request.year:
-            for game in games:
-                if game["team1"] == request.team1 or game["team2"] == request.team1:
-                    team1_scores.append(game["score1"] + game["score2"])
-                if game["team1"] == request.team2 or game["team2"] == request.team2:
-                    team2_scores.append(game["score1"] + game["score2"])
-
-    # Calculate features for prediction
-    avg_team1_score = np.mean(team1_scores) if team1_scores else 0
-    avg_team2_score = np.mean(team2_scores) if team2_scores else 0
-
-    # Use the average of both teams' scores as "amount"
-    input_amount = (avg_team1_score + avg_team2_score) / 2 if team1_scores and team2_scores else 0
-
-    # Create input feature array with only "year" and "amount"
-    input_features = np.array([[request.year, input_amount]])
-
-    # Debug: Log the input features
-    print(f"Input features: {input_features}")
-    
-    # Make prediction
     try:
+        # Predict probabilities
         probabilities = model.predict_proba(input_features)[0]
-        print(f"Model probabilities: {probabilities}")  # Debugging log
+
+        # Calculate confidence
+        if request.over_or_under == "over":
+            confidence = probabilities[1] * 100  # Probability of "over"
+        else:
+            confidence = probabilities[0] * 100  # Probability of "under"
+
+        return {"confidence": confidence}
     except Exception as e:
-        print(f"Prediction error: {e}")
-        raise HTTPException(status_code=500, detail="Error during prediction.")
+        raise HTTPException(status_code=500, detail=f"Prediction error: {e}")
 
-    confidence = probabilities[1] * 100  # Probability of "over"
-
-    # Determine result
-    if request.over_or_under == "over":
-        confidence_level = confidence
-    else:
-        confidence_level = 100 - confidence
-
-    return {"confidence_level": f"{confidence:.2f}%"}
