@@ -25,9 +25,15 @@ class BetInput(BaseModel):
 def read_root():
     return {"message": "Welcome to the Over/Under Confidence Prediction API"}
 
+import logging
+
+logging.basicConfig(level=logging.INFO)
+
 @app.post("/calculate-confidence")
 def calculate_confidence(input_data: BetInput):
     try:
+        logging.info(f"Received input: {input_data}")
+
         # Encode team names
         if input_data.team1 not in label_encoders["team1"].classes_:
             raise HTTPException(status_code=400, detail=f"Unknown team: {input_data.team1}")
@@ -46,4 +52,6 @@ def calculate_confidence(input_data: BetInput):
         return {"confidence_level": round(confidence * 100, 2)}
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error calculating confidence: {e}")
+        logging.error(f"Error: {e}")
+        raise HTTPException(status_code=500, detail=f"Internal server error: {e}")
+
