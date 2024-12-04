@@ -1,53 +1,45 @@
-import requests
 import pandas as pd
-from sklearn.linear_model import LogisticRegression
+from sklearn.ensemble import RandomForestRegressor
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import accuracy_score
+from sklearn.preprocessing import LabelEncoder
 import joblib
 
-# Fetch data from your existing API
-url = "https://nfl-api.onrender.com/games/all"
-response = requests.get(url)
+# Load your dataset
+# Replace 'historical_data.csv' with your actual dataset file
+data = pd.read_csv("historical_data.csv")
 
-if response.status_code == 200:
-    historical_data = response.json()  # Contains game data
-else:
-    raise Exception(f"Error fetching data: {response.status_code}")
+# Encode categorical variables (team1, team2)
+label_encoders = {
+    "team1": LabelEncoder(),
+    "team2": LabelEncoder(),
+}
 
-# Preprocess the data
-# Convert the API data into a DataFrame
-games = []
-for year, game_list in historical_data["all_years_data"].items():
-    for game in game_list:
-        total_score = game["score1"] + game["score2"]
-        games.append({
-            "year": int(year),
-            "team1": game["team1"],
-            "team2": game["team2"],
-            "score1": game["score1"],
-            "score2": game["score2"],
-            "amount": total_score,  # Use total score as the "amount"
-            "over": 1 if total_score > 45 else 0,  # Binary target for "over"
-        })
+data["team1"] = label_encoders["team1"].fit_transform(data["team1"])
+data["team2"] = label_encoders["team2"].fit_transform(data["team2"])
 
-data = pd.DataFrame(games)
+# Encode 'over_or_under' as binary
+data["over_or_under"] = data["over_or_under"].apply(lambda x: 1 if x.lower() == "over" else 0)
 
-# Select features and target
-X = data[["year", "amount"]]  # Features: year and "amount" (total score)
-y = data["over"]  # Target: whether the total score is over the threshold
+# Add derived features
+data["total_score"] = data["score1"] + data["score2"]
+data["score_difference"] = abs(data["score1"] - data["score2"])
 
-# Train-test split
+# Define features (X) and target (y)
+X = data[[
+    "team1", "team2", "year", "over_or_under", "amount",
+    "total_score", "score_difference"
+]]
+y = data["confidence_level"]
+
+# Split data into training and testing sets
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-# Train the model
-model = LogisticRegression()
+# Train a Random Forest Regressor
+model = RandomForestRegressor(n_estimators=100, random_state=42)
 model.fit(X_train, y_train)
 
-# Evaluate the model
-y_pred = model.predict(X_test)
-accuracy = accuracy_score(y_test, y_pred)
-print(f"Model accuracy: {accuracy * 100:.2f}%")
+# Save the trained model and label encoders
+joblib.dump(model, "model_with_scores.pkl")
+joblib.dump(label_encoders, "label_encoders.pkl")
 
-# Save the model
-joblib.dump(model, "ml/over_under_model.joblib")
-print("Model saved as ml/over_under_model.joblib")
+print("Model training completed. Model and encoders saved.")
